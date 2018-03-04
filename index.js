@@ -1,32 +1,32 @@
-var Q = require('q');
-var fs = require('fs');
-var path = require('path');
-var crc = require('crc');
-var exec = require('child_process').exec;
-var mjAPI = require('mathjax-node/lib/mj-single.js');
+var Q = require('q')
+var fs = require('fs')
+var path = require('path')
+var crc = require('crc')
+var exec = require('child_process').exec
+var mjAPI = require('mathjax-node/lib/mj-single.js')
 
-var started = false;
-var countMath = 0;
-var cache = {};
+var started = false
+var countMath = 0
+var cache = {}
 
 /**
     Prepare MathJaX
 */
 function prepareMathJax() {
     if (started) {
-        return;
+        return
     }
 
     mjAPI.config({
         MathJax: {
             SVG: {
-                font: 'TeX'
-            }
-        }
-    });
-    mjAPI.start();
+                font: 'TeX',
+            },
+        },
+    })
+    mjAPI.start()
 
-    started = true;
+    started = true
 }
 
 /**
@@ -37,30 +37,33 @@ function prepareMathJax() {
     @return {Promise<String>}
 */
 function convertTexToSvg(tex, options) {
-    var d = Q.defer();
-    options = options || {};
+    var d = Q.defer()
+    options = options || {}
 
-    prepareMathJax();
+    prepareMathJax()
 
-    mjAPI.typeset({
-        math:           tex,
-        format:         (options.inline ? 'inline-TeX' : 'TeX'),
-        svg:            true,
-        speakText:      true,
-        speakRuleset:   'mathspeak',
-        speakStyle:     'default',
-        ex:             6,
-        width:          100,
-        linebreaks:     true
-    }, function (data) {
-        if (data.errors) {
-            return d.reject(new Error(data.errors));
-        }
+    mjAPI.typeset(
+        {
+            math: tex,
+            format: options.inline ? 'inline-TeX' : 'TeX',
+            svg: true,
+            speakText: true,
+            speakRuleset: 'mathspeak',
+            speakStyle: 'default',
+            ex: 6,
+            width: 100,
+            linebreaks: true,
+        },
+        function(data) {
+            if (data.errors) {
+                return d.reject(new Error(data.errors))
+            }
 
-        d.resolve(options.write? null : data.svg);
-    });
+            d.resolve(options.write ? null : data.svg)
+        },
+    )
 
-    return d.promise;
+    return d.promise
 }
 
 /**
@@ -70,46 +73,58 @@ function convertTexToSvg(tex, options) {
     @return {Promise<Block>}
 */
 function processBlock(blk) {
-    var book = this;
-    var tex = blk.body;
-    var isInline = !(tex[0] == "\n");
+    var book = this
+    var tex = blk.body
+    var isInline = !(tex[0] == '\n')
 
     // For website return as script
-    var config = book.config.get('pluginsConfig.mathjax', {});
+    var config = book.config.get('pluginsConfig.mathjax', {})
 
-    if ((book.output.name == "website" || book.output.name == "json")
-        && !config.forceSVG) {
-        return '<script type="math/tex; '+(isInline? "": "mode=display")+'">'+blk.body+'</script>';
+    if (
+        (book.output.name == 'website' || book.output.name == 'json') &&
+        !config.forceSVG
+    ) {
+        return (
+            '<script type="math/tex; ' +
+            (isInline ? '' : 'mode=display') +
+            '">' +
+            blk.body +
+            '</script>'
+        )
     }
 
     // Check if not already cached
-    var hashTex = crc.crc32(tex).toString(16);
+    var hashTex = crc.crc32(tex).toString(16)
 
     // Return
-    var imgFilename = '_mathjax_' + hashTex + '.svg';
-    var img = '<img src="/' + imgFilename + '" />';
+    var imgFilename = '_mathjax_' + hashTex + '.svg'
+    var img = '<img src="/' + imgFilename + '" />'
 
     // Center math block
     if (!isInline) {
-        img = '<div style="text-align:center;margin: 1em 0em;width: 100%;">' + img + '</div>';
+        img =
+            '<div style="text-align:center;margin: 1em 0em;width: 100%;">' +
+            img +
+            '</div>'
     }
 
     return {
         body: img,
         post: function() {
             if (cache[hashTex]) {
-                return;
+                return
             }
 
-            cache[hashTex] = true;
-            countMath = countMath + 1;
+            cache[hashTex] = true
+            countMath = countMath + 1
 
-            return convertTexToSvg(tex, { inline: isInline })
-            .then(function(svg) {
-                return book.output.writeFile(imgFilename, svg);
-            });
-        }
-    };
+            return convertTexToSvg(tex, { inline: isInline }).then(function(
+                svg,
+            ) {
+                return book.output.writeFile(imgFilename, svg)
+            })
+        },
+    }
 }
 
 /**
@@ -118,15 +133,17 @@ function processBlock(blk) {
     @return {Object}
 */
 function getWebsiteAssets() {
-    var version = this.config.get('pluginsConfig.mathjax.version', 'latest');
+    var version = this.config.get('pluginsConfig.mathjax.version', '2.7.2')
 
     return {
-        assets: "./book",
+        assets: './book',
         js: [
-            'https://cdn.mathjax.org/mathjax/' + version + '/MathJax.js?config=TeX-AMS-MML_HTMLorMML',
-            'plugin.js'
-        ]
-    };
+            'https://cdnjs.cloudflare.com/ajax/libs/mathjax/' +
+                version +
+                '/MathJax.js?config=TeX-MML-AM_CHTML',
+            'plugin.js',
+        ],
+    }
 }
 
 module.exports = {
@@ -134,11 +151,11 @@ module.exports = {
     blocks: {
         math: {
             shortcuts: {
-                parsers: ["markdown", "asciidoc"],
-                start: "$$",
-                end: "$$"
+                parsers: ['markdown', 'asciidoc'],
+                start: '$$',
+                end: '$$',
             },
-            process: processBlock
-        }
-    }
-};
+            process: processBlock,
+        },
+    },
+}
