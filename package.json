@@ -1,8 +1,9 @@
 {
     "name": "gitbook-plugin-mathjax",
-    "description": "MathJAX integration into GitBook to display math and latex equations",
+    "description":
+        "MathJAX integration into GitBook to display math and latex equations",
     "main": "index.js",
-    "version": "1.1.3",
+    "version": "1.1.4",
     "engines": {
         "gitbook": ">=3.0.0"
     },
@@ -20,10 +21,7 @@
     "bugs": {
         "url": "https://github.com/GitbookIO/plugin-mathjax/issues"
     },
-    "keywords": [
-        "math",
-        "latex"
-    ],
+    "keywords": ["math", "latex"],
     "gitbook": {
         "properties": {
             "forceSVG": {
