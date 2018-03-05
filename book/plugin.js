@@ -8,9 +8,9 @@ require(['gitbook'], function(gitbook) {
       'HTML-CSS': { linebreaks: { automatic: true } },
       SVG: { linebreaks: { automatic: true } },
     },
-  })
+  });
 
   gitbook.events.bind('page.change', function() {
-    MathJax.Hub.Typeset()
-  })
-})
+    MathJax.Hub.Typeset();
+  });
+});
